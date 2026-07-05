@@ -1,0 +1,14 @@
+ for jwt token 
+ npm install --save @nestjs/jwt
+
+ check password 
+npm i @nestjs/passport
+
+//take .env 
+ npm i --save @nestjs/config passport passport-jwt
+
+ npm install --save @types/passport
+ npm install --save @types/passport-jwt
+
+ for swagger documentation 
+ npm install --save @nestjs/swagger
