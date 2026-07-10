@@ -6,6 +6,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  Max,
   Min,
 } from 'class-validator';
 import { SortDirection } from '../enums/sort-direction.enum';
@@ -17,7 +18,8 @@ export class BaseQueryDto {
   @Transform(({ value }) => {
     if (value === 'true' || value === true) return true;
     if (value === 'false' || value === false) return false;
-    return undefined;
+    const invalidValue: unknown = value;
+    return invalidValue;
   })
   @IsOptional()
   @IsBoolean()
@@ -52,6 +54,7 @@ export class BaseQueryDto {
   @IsOptional()
   @IsInt()
   @Min(1)
+  @Max(100)
   limit = 10;
 
   @ApiPropertyOptional({
