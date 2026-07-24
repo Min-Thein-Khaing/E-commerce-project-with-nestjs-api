@@ -7,7 +7,7 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCategoryDto } from '../dtos/category-create.dto';
 import { CategoriesResponseDto } from '../dtos/category-response.dto';
-import { Category } from 'src/generated/prisma/client';
+import { Category, Prisma } from 'src/generated/prisma/client';
 import { GetCategoryQueryDto } from '../dtos/category-get.dto';
 import { PaginationProviderService } from 'src/common/providers/pagination.provider.service';
 import { UpdateCategoryDto } from '../dtos/category-update.dto';
@@ -82,12 +82,44 @@ export class CategoriesService {
 
   //get all categorise
   async getAllCategories(getCategoryQueryDto: GetCategoryQueryDto) {
+    const where: Prisma.CategoryWhereInput = {};
+    if (
+      getCategoryQueryDto.startCreatedAt ||
+      getCategoryQueryDto.endCreatedAt
+    ) {
+      where.createdAt = {
+        ...(getCategoryQueryDto.startCreatedAt && {
+          gte: new Date(getCategoryQueryDto.startCreatedAt),
+        }),
+
+        ...(getCategoryQueryDto.endCreatedAt && {
+          lt: new Date(getCategoryQueryDto.endCreatedAt),
+        }),
+      };
+    }
+
+    // UpdatedAt
+    if (
+      getCategoryQueryDto.startUpdatedAt ||
+      getCategoryQueryDto.endUpdatedAt
+    ) {
+      where.updatedAt = {
+        ...(getCategoryQueryDto.startUpdatedAt && {
+          gte: new Date(getCategoryQueryDto.startUpdatedAt),
+        }),
+
+        ...(getCategoryQueryDto.endUpdatedAt && {
+          lt: new Date(getCategoryQueryDto.endUpdatedAt),
+        }),
+      };
+    }
+
     const result = await this.paginationProviderService.paginationQuery(
       getCategoryQueryDto,
       this.prisma.category,
-      ['name', 'slug'],
-      [],
       {
+        searchFields: ['name', 'slug'],
+        where,
         include: {
           _count: { select: { products: true } },
         },

@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsString,
   Max,
+  MaxLength,
   Min,
 } from 'class-validator';
 import { SortDirection } from '../enums/sort-direction.enum';
@@ -30,6 +31,7 @@ export class BaseQueryDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   search?: string;
 
   @ApiPropertyOptional({

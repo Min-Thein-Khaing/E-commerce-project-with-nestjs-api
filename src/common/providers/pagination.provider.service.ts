@@ -6,19 +6,27 @@ interface PrismaDelegate<T> {
   findMany: (args?: any) => Promise<T[]>;
   count: (args?: any) => Promise<number>;
 }
+//filter knowlege not good for performace
+//export interface RangeFilter {
+//   field: string;
+//   min?: number;
+//   max?: number;
+// }
 
-interface RangeFilter {
-  field: string;
-  min?: number;
-  max?: number;
+export interface PaginationOptions {
+  searchFields?: string[]; // Search လုပ်ချင်တဲ့ Field များ (ဥပမာ- ['name', 'sku'])
+  where?: Record<string, any>; // မည်သည့် Filter မဆို (isActive, categoryId စသည်)
+  include?: Record<string, any>; // Prisma Relations (ဥပမာ- { category: true })
+  tieBreakerField?: string; // မည်သည့် Tie Breaker Field မဆို
+  // rangeFilters?: RangeFilter[]; // မည်သည့် Range Filter မဆို
 }
+
 @Injectable()
 export class PaginationProviderService {
   public async paginationQuery<T>(
     paginationQuery: BaseQueryDto & { sortBy?: string },
     delegate: PrismaDelegate<T>,
-    searchFields: string[] = [],
-    rangeFilters: RangeFilter[] = [],
+    options: PaginationOptions = {},
     findManyArgs: Record<string, unknown> = {},
   ) {
     const {
@@ -29,33 +37,60 @@ export class PaginationProviderService {
       sortBy,
       sortDirection,
     } = paginationQuery;
+    const {
+      searchFields = [],
+      where: customWhere = {},
+      include,
+      tieBreakerField = 'id',
+      // rangeFilters = [],
+    } = options;
 
-    const where: Record<string, any> = {};
-    // const where: Prisma.CategoryWhereInput = {};
-    //take isActive from query if true all
+    const filters: Record<string, any>[] = [];
+
+    if (Object.keys(customWhere).length > 0) {
+      filters.push(customWhere);
+    }
+
     if (isActive !== undefined) {
-      where.isActive = isActive;
+      filters.push({ isActive });
     }
 
-    //take search query
     if (search?.trim() && searchFields.length > 0) {
-      where.OR = searchFields.map((field) => ({
-        [field]: { contains: search.trim(), mode: 'insensitive' },
-      }));
+      filters.push({
+        OR: searchFields.map((field) => ({
+          [field]: { contains: search.trim(), mode: 'insensitive' },
+        })),
+      });
     }
-    //filter
-    rangeFilters.forEach((filter) => {
-      if (filter.min !== undefined || filter.max !== undefined) {
-        where[filter.field] = {
-          ...(filter.min !== undefined && { gte: filter.min }),
-          ...(filter.max !== undefined && { lte: filter.max }),
-        };
-      }
-    });
-    //sort direction
-    const orderBy = sortBy
-      ? { [sortBy]: sortDirection.toLowerCase() }
-      : { createdAt: sortDirection.toLowerCase() };
+
+    //knowledge
+    // rangeFilters.forEach((filter) => {
+    //   if (filter.min !== undefined || filter.max !== undefined) {
+    //     filters.push({
+    //       [filter.field]: {
+    //         ...(filter.min !== undefined && { gte: filter.min }),
+    //         ...(filter.max !== undefined && { lte: filter.max }),
+    //       },
+    //     });
+    //   }
+    // });
+
+    const where =
+      filters.length === 0
+        ? {}
+        : filters.length === 1
+          ? filters[0]
+          : { AND: filters };
+
+    const normalizedPage = Number.isInteger(page) && page > 0 ? page : 1;
+    const normalizedLimit =
+      Number.isInteger(limit) && limit > 0 && limit <= 100 ? limit : 10;
+    const direction = sortDirection?.toLowerCase() === 'asc' ? 'asc' : 'desc';
+    const sortField = sortBy ?? 'createdAt';
+    const orderBy =
+      tieBreakerField === sortField
+        ? { [sortField]: direction }
+        : [{ [sortField]: direction }, { [tieBreakerField]: 'asc' }];
 
     //Count and findMany
     const [data, count] = await Promise.all([
@@ -63,21 +98,22 @@ export class PaginationProviderService {
         ...findManyArgs,
         where,
         orderBy,
-        skip: (page - 1) * limit,
-        take: limit,
+        skip: (normalizedPage - 1) * normalizedLimit,
+        take: normalizedLimit,
+        ...(include && { include }),
       }),
       delegate.count({ where }),
     ]);
 
     //
-    const totalPages = Math.ceil(count / limit);
+    const totalPages = Math.ceil(count / normalizedLimit);
 
     return {
       data,
       meta: {
         total: count,
-        page,
-        limit,
+        page: normalizedPage,
+        limit: normalizedLimit,
         totalPages,
       },
     };

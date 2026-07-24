@@ -43,6 +43,12 @@ export class ProductResponseDto {
   })
   categoryId!: string | null;
 
+  @ApiProperty({
+    description: 'Product category name',
+    example: 'Electronics',
+  })
+  categoryName!: string;
+
   @ApiPropertyOptional({
     description: 'Product image URL',
     example: 'https://example.com/image.jpg',
