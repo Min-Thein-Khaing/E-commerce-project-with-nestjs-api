@@ -12,3 +12,6 @@ npm i @nestjs/passport
 
  for swagger documentation 
  npm install --save @nestjs/swagger
+
+ for rate limit
+ npm i --save @nestjs/throttler
