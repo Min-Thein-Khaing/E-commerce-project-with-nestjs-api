@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  ArrayMinSize,
   IsArray,
   IsNotEmpty,
   IsNumber,
@@ -19,21 +20,6 @@ class OrderItemDto {
   productId!: string;
 
   @ApiProperty({
-    description: 'Product price in USD',
-    example: 99.99,
-  })
-  @IsNotEmpty()
-  @IsNumber(
-    {
-      maxDecimalPlaces: 2,
-    },
-    {
-      message: 'Price must be a number with 2 decimal places',
-    },
-  )
-  price!: number;
-
-  @ApiProperty({
     description: 'Product quantity',
     example: 1,
   })
@@ -41,6 +27,15 @@ class OrderItemDto {
   @IsNumber()
   @Type(() => Number)
   quantity!: number;
+
+  @ApiProperty({
+    description: 'Product price in USD',
+    example: 99.99,
+  })
+  @IsNotEmpty()
+  @IsNumber()
+  @Type(() => Number)
+  price!: number;
 }
 
 export class CreateOrderDto {
@@ -49,13 +44,13 @@ export class CreateOrderDto {
     example: [
       {
         productId: 'sdfdfds-ewrewrw343dd-w43432ff',
-        price: 99.99,
         quantity: 1,
       },
     ],
     type: [OrderItemDto],
   })
   @IsArray()
+  @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => OrderItemDto)
   orderItems!: OrderItemDto[];

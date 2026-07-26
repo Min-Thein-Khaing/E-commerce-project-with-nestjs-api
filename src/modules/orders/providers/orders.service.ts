@@ -29,34 +29,36 @@ export class OrdersService {
   ): Promise<OrderApiResponseDto<OrderResponseDto>> {
     const { orderItems, shippingAddress } = createOrderDto;
 
-    for (const orderItem of orderItems) {
-      const product = await this.prisma.product.findUnique({
-        where: { id: orderItem.productId },
-      });
-
-      if (!product) {
-        throw new NotFoundException('Product not found');
-      }
-
-      if (product.stock < orderItem.quantity) {
-        throw new NotFoundException('Product out of stock');
-      }
-    }
-
     const total = orderItems.reduce((pv, cv) => pv + cv.price * cv.quantity, 0);
 
-    const latestCart = await this.prisma.cart.findFirst({
-      where: {
-        userId,
-        checkOut: false,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    const orderNo = `ORD-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    // Transaction ထဲသို့ Stock Check ပါ ထည့်သွင်းခြင်း
     const order = await this.prisma.$transaction(async (tx) => {
+      // 1. Transaction ထဲမှာ Stock စစ်ခြင်း (Race Condition ကို ကာကွယ်ရန်)
+      for (const orderItem of orderItems) {
+        const product = await tx.product.findUnique({
+          where: { id: orderItem.productId },
+        });
+
+        if (!product) {
+          throw new NotFoundException(`Product not found`);
+        }
+
+        if (product.stock < orderItem.quantity) {
+          // ဒီ Exception တက်တာနဲ့ Transaction တစ်ခုလုံး အလိုအလျောက် Rollback ဖြစ်သွားမည်
+          throw new BadRequestException(
+            `Product ${product.id} is out of stock`,
+          );
+        }
+      }
+
+      const latestCart = await tx.cart.findFirst({
+        where: { userId, checkOut: false },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      const orderNo = `ORD-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+      // 2. Order ဆောက်ခြင်း
       const newOrder = await tx.order.create({
         data: {
           orderNo,
@@ -68,26 +70,21 @@ export class OrdersService {
           orderItems: {
             create: orderItems.map((item) => ({
               productId: item.productId,
-              price: item.price,
+              price: Number(item.price),
               quantity: item.quantity,
             })),
           },
         },
         include: {
-          orderItems: {
-            include: {
-              product: true,
-            },
-          },
+          orderItems: { include: { product: true } },
           user: true,
         },
       });
 
+      // 3. Stock လျှော့ခြင်း
       for (const orderItem of orderItems) {
         await tx.product.update({
-          where: {
-            id: orderItem.productId,
-          },
+          where: { id: orderItem.productId },
           data: {
             stock: { decrement: orderItem.quantity },
           },
