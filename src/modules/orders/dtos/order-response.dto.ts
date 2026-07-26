@@ -22,9 +22,19 @@ export class OrderApiResponseDto<T> {
 
 export class orderItemResponseDto {
   @ApiProperty({
+    description: 'Order item ID',
+  })
+  id!: string;
+
+  @ApiProperty({
     description: 'Product ID',
   })
   productId!: string;
+
+  @ApiProperty({
+    description: 'Product name',
+  })
+  productName!: string;
 
   @ApiProperty({
     description: 'Product price in USD',
@@ -56,6 +66,20 @@ export class OrderResponseDto {
 
   @ApiProperty()
   shippingAddress?: string;
+
+  @ApiPropertyOptional({
+    description: 'User email',
+    required: false,
+    nullable: true,
+  })
+  userEmail?: string;
+
+  @ApiPropertyOptional({
+    description: 'User full name',
+    required: false,
+    nullable: true,
+  })
+  userName?: string;
 
   @ApiProperty()
   orderItems!: orderItemResponseDto[];
