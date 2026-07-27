@@ -10,6 +10,7 @@ import { PaginationModule } from './common/pagination.module';
 import { ProductsModule } from './modules/products/products.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { ThrottlerModule } from '@nestjs/throttler';
+// import { PaymentModule } from './modules/payment/payment.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     PaginationModule,
     ProductsModule,
     OrdersModule,
+    // PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

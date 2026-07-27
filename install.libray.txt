@@ -15,3 +15,6 @@ npm i @nestjs/passport
 
  for rate limit
  npm i --save @nestjs/throttler
+
+for stripe
+npm i stripe
