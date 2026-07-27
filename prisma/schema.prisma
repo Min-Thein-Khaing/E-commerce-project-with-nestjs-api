@@ -150,6 +150,7 @@ model OrderItem {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   quantity  Int
   price     Decimal  @db.Decimal(10, 2)
+  subTotal  Decimal?  @db.Decimal(10, 2)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -161,6 +162,7 @@ model Payment {
   id            String        @id @default(uuid())
   status        PaymentStatus @default(PENDING)
   currency      String        @default("usd")
+  amount        Decimal?       @db.Decimal(10, 2)
   paymentMethod String?
   transactionId String?
   userId        String
