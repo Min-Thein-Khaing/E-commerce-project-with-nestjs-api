@@ -1,0 +1,38 @@
+
+for prisma course manage 
+
+doing create prisma migrate 
+1.npx prisma migrate dev --name-init
+
+that is seeing with database in studio
+  npx prisma studio
+
+2. create prisma new one add in prisma that is err we do with teamwork when i create migrate delete colum that is damage in team work project 
+
+we use not create migrate to add directly fake in database 
+npx prisma db push 
+
+
+
+3. that is fix column name that is not using production but in development when i client need to chg column that have data so 
+we do not need to damage we have to create migrate file first 
+npx prisma migrate dev --create-only that get output .sql we have to chg in .sql like this 
+
+ALTER TABLE 'otp' RENAME 'error' TO 'errorCount'
+and then do npx prisma migrate dev 
+
+4. we have many migrate file we have to plus all migrate file in one migrate file 
+npx prisma migrate diff \
+--from-empty \
+--to-schema=prisma/schema.prisma \
+--script > prisma/migrations/0_init/migration.sql
+
+npx prisma migrate resolve --applied 0_init
+
+
+
+for seeding 
+npx prisma db seed
+
+reset table 
+npx prisma db reset
